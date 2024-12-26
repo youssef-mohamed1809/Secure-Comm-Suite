@@ -42,6 +42,10 @@ if __name__ == "__main__":
         pass
     
     
+    f = open(f"{username}_private.txt", "r")
+    MY_PRIVATE_KEY = RSA.import_key(base64.b64decode(f.read().strip()))
+    f.close()
+    
     f = open("authority_public.txt", "r")
     KEY_MANAGER_PUBLIC_KEY = RSA.import_key(base64.b64decode(f.read().strip()))
     f.close()
@@ -54,6 +58,8 @@ if __name__ == "__main__":
     friend_public_key, signature = keyManagerSocket.recv(1024).decode().split(" ")
     friend_public_key_HASHED = SHA256.new(friend_public_key.encode())
     signature = base64.b64decode(signature)
+
+
 
     try:
         pkcs1_15.new(KEY_MANAGER_PUBLIC_KEY).verify(friend_public_key_HASHED, signature)
@@ -71,6 +77,15 @@ if __name__ == "__main__":
         AES_KEY = ''.join(random.choices(string.ascii_letters, k=16))
         NONCE = random.randint(1, 10000)
         msg = AES_KEY + " " + str(NONCE)
+        
+        friend_public_key =RSA.import_key(base64.b64decode(friend_public_key.strip()))
+        
+        enc_key = rsa_encrypt(friend_public_key, msg.encode())
+        aes_key_and_nonce_hashed = SHA256.new(enc_key)
+        signature = pkcs1_15.new(MY_PRIVATE_KEY).sign(aes_key_and_nonce_hashed)
+        
+        msg =  base64.b64encode(enc_key).decode('utf-8') + " " + base64.b64encode(signature).decode("UTF-8")
+        
         chatServerSocket.send(msg.encode())
         
         nonce_bytes = struct.pack('<Q', NONCE)
@@ -86,7 +101,23 @@ if __name__ == "__main__":
             print(f"Message: {data!r}")
         
     else:
-        AES_KEY, NONCE = chatServerSocket.recv(1024).decode().split(" ")
+        aes_and_nonce, signature = chatServerSocket.recv(1024).decode().split(" ")
+        
+        aes_and_nonce = base64.b64decode(aes_and_nonce)
+        aes_and_nonce_HASHED = SHA256.new(aes_and_nonce)
+        signature = base64.b64decode(signature)
+
+        friend_public_key =RSA.import_key(base64.b64decode(friend_public_key.strip()))
+
+        try:
+            pkcs1_15.new(friend_public_key).verify(aes_and_nonce_HASHED, signature)
+            print("SUIIII")
+        except:
+            print("LAAAAA")
+        
+        aes_and_nonce = rsa_decrypt(MY_PRIVATE_KEY, aes_and_nonce)
+        
+        AES_KEY, NONCE = aes_and_nonce.decode().split(" ")
         
         nonce_bytes = struct.pack('<Q', int(NONCE))
 
