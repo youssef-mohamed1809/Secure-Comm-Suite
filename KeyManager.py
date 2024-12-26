@@ -5,7 +5,7 @@ import base64
 from Cryptography import sha_256_hash
 
 def generate_rsa_keys():
-    key = RSA.generate(2048)
+    key = RSA.generate(1024)
     private_key = key.export_key()
     public_key = key.publickey().export_key()
     private_key_b64 = base64.b64encode(private_key).decode('utf-8')

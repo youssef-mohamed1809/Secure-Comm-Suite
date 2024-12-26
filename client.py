@@ -7,13 +7,11 @@ import base64
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 import struct
-
-# import Cryptography as Cryptography
-# from ..key_manager.KeyManager import generate_rsa_keys
+from KeyManager import generate_rsa_keys
 
 
-HOST = "127.0.0.1"  # The server's hostname or IP address
-KEY_MANAGER_PORT = 65432  # The port used by the server
+HOST = "127.0.0.1"
+KEY_MANAGER_PORT = 65432
 CHAT_SERVER_PORT = 65433
 
 KEY_MANAGER_PUBLIC_KEY = ""
@@ -37,9 +35,12 @@ if __name__ == "__main__":
         ack = keyManagerSocket.recv(1024).decode()
     
     if auth_choice != "1":
-        # private, public = generate_rsa_keys()
-        # keyManagerSocket.send(public.encode())
-        pass
+        private, public = generate_rsa_keys()
+        f = open(f"{username}_private.txt", "w")
+        f.write(private)
+        f.close()
+        keyManagerSocket.send(public.encode())
+        
     
     
     f = open(f"{username}_private.txt", "r")

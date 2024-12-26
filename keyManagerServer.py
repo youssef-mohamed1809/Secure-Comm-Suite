@@ -39,11 +39,9 @@ def client_handler(conn):
         conn.sendall(b"1")
     else:
         # CREATE AN ACCOUNT
-        # NO
         res = False
         while not res:
             auth_data = conn.recv(1024).decode().split(':')
-            
             ## CHECK IF USERNAME IS UNIQUE
             res = True
             print(res)

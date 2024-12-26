@@ -9,8 +9,6 @@ class AESCryptography:
     def __init__(self, key, nonce):
         self.key = key
         self.nonce = nonce
-        
-
     def aes_encrypt(self, plaintext):
         cipher = AES.new(self.key, AES.MODE_EAX, nonce=self.nonce)
         ciphertext = cipher.encrypt(plaintext.encode()) 
