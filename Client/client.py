@@ -1,14 +1,10 @@
 import socket
-import random
-import string
-from Cryptography import sha_256_hash, rsa_decrypt, rsa_encrypt, AESCryptography, verify_signature
+from Cryptography import sha_256_hash, rsa_decrypt, rsa_encrypt, verify_signature, create_signature ,generate_rsa_keys, generate_aes_key_and_nonce, AESCryptography
 from Crypto.PublicKey import RSA
 import base64
-from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 import struct
-from Cryptography import generate_rsa_keys, generate_aes_key_and_nonce
-
+import sys
 
 HOST = "127.0.0.1"
 KEY_MANAGER_PORT = 65432
@@ -60,9 +56,10 @@ if __name__ == "__main__":
     friend_public_key_HASHED = sha_256_hash(friend_public_key)
     signature = base64.b64decode(signature)           
     if verify_signature(KEY_MANAGER_PUBLIC_KEY, signature, friend_public_key_HASHED):
-        print("Signature verified")
+        print("Signature Verified")
     else:
-        print("Signature verification failed")
+        print("Signature Verification Failed")
+        exit()
 
     keyManagerSocket.close()
     
@@ -80,7 +77,8 @@ if __name__ == "__main__":
         
         enc_key = rsa_encrypt(friend_public_key, msg.encode())
         aes_key_and_nonce_hashed = SHA256.new(enc_key)
-        signature = pkcs1_15.new(MY_PRIVATE_KEY).sign(aes_key_and_nonce_hashed)
+        signature = create_signature(MY_PRIVATE_KEY, aes_key_and_nonce_hashed)
+        
         
         msg =  base64.b64encode(enc_key).decode('utf-8') + " " + base64.b64encode(signature).decode("UTF-8")
         
@@ -110,7 +108,8 @@ if __name__ == "__main__":
         if verify_signature(friend_public_key, signature, aes_and_nonce_HASHED):
             print("Signature Verified")
         else:
-            print("Signature failed")
+            print("Signature Verification Failed")
+            exit()
             
         
         aes_and_nonce = rsa_decrypt(MY_PRIVATE_KEY, aes_and_nonce)

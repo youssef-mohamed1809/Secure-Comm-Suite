@@ -17,7 +17,6 @@ def client_handler(myconn):
     myconn.send(str(numOfConnections).encode())
     numOfConnections += 1
     if numOfConnections == 1:
-        print("Seif beyes2al lw e7na hena")
         AES_KEY_MSG = myconn.recv(1024).decode()
         while True:
             data = myconn.recv(1024)
@@ -33,11 +32,6 @@ def client_handler(myconn):
                 if conn != myconn:
                     conn.send(data)
     
-
-        
-    
-
-
 
 if __name__ == "__main__":
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

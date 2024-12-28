@@ -1,13 +1,10 @@
 import socket
 from Crypto.PublicKey import RSA
 from _thread import *
-from Authentication import login, create_account
-from KeyManager import get_private_key, get_public_key
-from Cryptography import rsa_encrypt, sha_256_hash,create_signature
-import json
+from Authentication import login, create_account, usernameUnique
+from KeyManager import get_public_key
+from Cryptography import sha_256_hash, create_signature
 import base64
-from Crypto.Signature import pkcs1_15
-from Crypto.Hash import SHA256
 
 HOST = "127.0.0.1"
 PORT = 65432
@@ -42,9 +39,11 @@ def client_handler(conn):
         res = False
         while not res:
             auth_data = conn.recv(1024).decode().split(':')
-            ## CHECK IF USERNAME IS UNIQUE
-            res = True
-            print(res)
+            res = None
+            if usernameUnique(auth_data[0]):
+                res = True
+            else:
+                res = False
             if not res:
                 conn.sendall(b"0")    
         conn.sendall(b"1")
