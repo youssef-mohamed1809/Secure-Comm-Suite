@@ -2,8 +2,8 @@ import socket
 from Crypto.PublicKey import RSA
 from _thread import *
 from Authentication import login, create_account
-from KeyManager import generate_aes_key_and_nonce, get_private_key, get_public_key
-from Cryptography import rsa_encrypt, sha_256_hash
+from KeyManager import get_private_key, get_public_key
+from Cryptography import rsa_encrypt, sha_256_hash,create_signature
 import json
 import base64
 from Crypto.Signature import pkcs1_15
@@ -53,17 +53,12 @@ def client_handler(conn):
     
     
     friend_username = conn.recv(1024).decode()
-    friendPublicKey = None
-    with open('users.json', 'r') as file:
-        data = json.load(file)
-        users = data['users']
-        for user in users:
-            if user['username'] == friend_username:
-                friendPublicKey = user['public_key']
-                
+    friendPublicKey = get_public_key(friend_username)      
     
-    friendPublicKey_HASHED = SHA256.new(friendPublicKey.encode())
-    signature = pkcs1_15.new(AUTHORITY_PRIVATE_KEY).sign(friendPublicKey_HASHED)
+    friendPublicKey_HASHED = sha_256_hash(friendPublicKey)
+    signature = create_signature(AUTHORITY_PRIVATE_KEY, friendPublicKey_HASHED)
+    
+    
     
     msg = friendPublicKey + " " + base64.b64encode(signature).decode("UTF-8")
     conn.send(msg.encode())
@@ -76,12 +71,10 @@ def client_handler(conn):
 if __name__ == "__main__":
     
     f = open("authority_private.txt", "r")
-    # AUTHORITY_PRIVATE_KEY = RSA.f.read()
     AUTHORITY_PRIVATE_KEY = RSA.import_key(base64.b64decode(f.read().strip()))
     f.close()
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        AES_KEY, AES_NONCE = generate_aes_key_and_nonce()
         s.bind((HOST, PORT))
         s.listen()
         while True:

@@ -1,13 +1,13 @@
 import socket
 import random
 import string
-from Cryptography import sha_256_hash, rsa_decrypt, rsa_encrypt, AESCryptography
+from Cryptography import sha_256_hash, rsa_decrypt, rsa_encrypt, AESCryptography, verify_signature
 from Crypto.PublicKey import RSA
 import base64
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 import struct
-from KeyManager import generate_rsa_keys
+from Cryptography import generate_rsa_keys, generate_aes_key_and_nonce
 
 
 HOST = "127.0.0.1"
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     while ack == "0":
         username = input("Input Username: ")
         password = input("Input Password: ")
-        msg = username + ":" + sha_256_hash(password)
+        msg = username + ":" + sha_256_hash(password).hexdigest()
         keyManagerSocket.sendall(msg.encode())
         ack = keyManagerSocket.recv(1024).decode()
     
@@ -57,16 +57,12 @@ if __name__ == "__main__":
     keyManagerSocket.send(friend_username.encode())
     
     friend_public_key, signature = keyManagerSocket.recv(1024).decode().split(" ")
-    friend_public_key_HASHED = SHA256.new(friend_public_key.encode())
-    signature = base64.b64decode(signature)
-
-
-
-    try:
-        pkcs1_15.new(KEY_MANAGER_PUBLIC_KEY).verify(friend_public_key_HASHED, signature)
-        print("SUIIII")
-    except:
-           print("LAAAAA")
+    friend_public_key_HASHED = sha_256_hash(friend_public_key)
+    signature = base64.b64decode(signature)           
+    if verify_signature(KEY_MANAGER_PUBLIC_KEY, signature, friend_public_key_HASHED):
+        print("Signature verified")
+    else:
+        print("Signature verification failed")
 
     keyManagerSocket.close()
     
@@ -75,8 +71,9 @@ if __name__ == "__main__":
     
     numOfServerConnections = chatServerSocket.recv(1024).decode()
     if(int(numOfServerConnections) == 0):
-        AES_KEY = ''.join(random.choices(string.ascii_letters, k=16))
-        NONCE = random.randint(1, 10000)
+
+        AES_KEY, NONCE = generate_aes_key_and_nonce()
+        
         msg = AES_KEY + " " + str(NONCE)
         
         friend_public_key =RSA.import_key(base64.b64decode(friend_public_key.strip()))
@@ -92,7 +89,6 @@ if __name__ == "__main__":
         nonce_bytes = struct.pack('<Q', NONCE)
         
         symm_crypt = AESCryptography(key=AES_KEY.encode(), nonce=nonce_bytes)
-        print("e7na hena?")
         while True:
             msg = input("My Message: ")
             msg = symm_crypt.aes_encrypt(msg)
@@ -110,11 +106,12 @@ if __name__ == "__main__":
 
         friend_public_key =RSA.import_key(base64.b64decode(friend_public_key.strip()))
 
-        try:
-            pkcs1_15.new(friend_public_key).verify(aes_and_nonce_HASHED, signature)
-            print("SUIIII")
-        except:
-            print("LAAAAA")
+            
+        if verify_signature(friend_public_key, signature, aes_and_nonce_HASHED):
+            print("Signature Verified")
+        else:
+            print("Signature failed")
+            
         
         aes_and_nonce = rsa_decrypt(MY_PRIVATE_KEY, aes_and_nonce)
         
