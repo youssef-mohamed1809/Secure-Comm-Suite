@@ -12,6 +12,9 @@ def login(username, password):
                 
                 
 def create_account(username, password, public_key):
+    if not usernameUnique(username):
+        return False
+    
     with open('users.json', 'r') as file:
         data = json.load(file)
         users = data['users']
@@ -20,6 +23,7 @@ def create_account(username, password, public_key):
         users.append({"username": username, "password": password, "public_key": public_key})
         data['users'] = users
         json.dump(data, file)
+    
     return True
 
 def usernameUnique(username):
